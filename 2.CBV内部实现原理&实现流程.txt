@@ -1,0 +1,74 @@
+django FBV、CBV内部原理：
+    Http请求都是基于socket套接字实现交互的
+    基于反射实现根据请求方式的不同执行不同的视图函数 -- getattr(obj, request.method)
+    原理：
+    a.路由
+        url -> view方法 -> dispatch方法（反射执行不同的方法；GET\POST\PUT\DELETE）
+    b.流程
+        对于一个CBV视图：
+        class HomeView(View):
+            def get(self, request, *args, **kwargs):
+                pass
+
+            def post(self, request, *args, **kwargs):
+                pass
+
+            ....
+
+        当他继承了View基类的时候，当路由系统进来的时候会去执行这个类的as_view()方法
+        在django的源码中可以找到这个as_view()方法，它返回了一个self.dispatch()方法
+        这个dispatch方法利用了反射的原理去执行了CBV视图的对应Http请求的视图函数
+
+        也就是说当我们自己定义了一个CBV视图类，并且重写了dispatch方法，那么所有的请求都会执行这个方法的返回值
+        而不会进入到其他的视图函数中；
+        class HomeView(View):
+            def dispatch(self, request, *args, **kwargs):
+                # 所有请求统一返回一个字符串
+                return HttpResponse('dispatch')
+
+                OR
+
+                # 反射执行对应的视图函数返回给前端
+                func = getattr(self, request.method.lower())
+                ret = func(request, *args, **kwargs)
+                return ret
+
+                OR
+
+                ret = super(className, self).dispatch(request, *args, **kwargs)
+                return ret
+
+    继承：多个类公用的功能可以通过继承来实现
+        class BaseView(object):
+            def dispatch(self, request, *args, **kwargs):
+                print('before')
+                ret = super(BaseView, self, *args, **kwargs).dispatch(request, *args, **kwargs)
+                print('after')
+                return ret
+
+
+        class Home(BaseView, View):
+            pass
+
+
+        class Detail(BaseView, View):
+            pass
+
+
+    **csrf_token
+        1. django中间件
+            最多能写5个方法
+            process_request
+            process_view
+            process_response
+            process_exception           # 异常执行
+            process_render_template
+        2. 中间件执行流程
+            -执行所有的process_request
+            -路由匹配
+            -重头执行process_view
+            -执行视图函数
+                未报错 -->
+                    -视图函数返回之后执行process_response
+                有报错 -->
+                    -执行process_exception

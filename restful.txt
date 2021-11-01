@@ -1,0 +1,14 @@
+一、开发方式：
+    普通开发方式(前后端不分离)
+    前后端分离(所有交互都是通过ajax处理)
+        后端为前端提供API/接口
+        后端开发永远返回HttpResponse
+    python的封装：
+        - 对同一类方法的封装
+        - 对参数的封装
+
+二、restful规范(建议)
+
+
+三、django rest framework框架
+
