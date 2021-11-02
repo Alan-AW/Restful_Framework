@@ -8,7 +8,9 @@
         - 对参数的封装
 
 二、restful规范(建议)
-
-
+    1.根据method不同来做不同的操作(FBV)，不需要更多的路由，只需要一条路由即可
+        1.1 -FBV中做判断：if method == 'GET'\if method == 'POST'\PUT\DELETE....
+        1.2 -CBV中直接编写对应方法: def get(self, request)\post\put\delete...
+    
 三、django rest framework框架
 

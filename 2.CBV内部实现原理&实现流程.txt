@@ -63,12 +63,60 @@ django FBV、CBV内部原理：
             process_response
             process_exception           # 异常执行
             process_render_template
+
         2. 中间件执行流程
             -执行所有的process_request
             -路由匹配
             -重头执行process_view
             -执行视图函数
                 未报错 -->
-                    -视图函数返回之后执行process_response
+                    视图函数返回了render方法
+                        -执行process_render_template
+                    视图函数其他返回值
+                        -视图函数返回之后执行process_response
                 有报错 -->
                     -执行process_exception
+
+        3. django的csrf_token的实现
+            在中间件process_view内
+                * from django.views.decorators.csrf import csrf_exempt
+                当一个视图函数免除csrf_token验证的时候可以使用一个装饰器：@csrf_exempt
+                所以csrf_token只能在process_view中做验证，process_request无法读取到视图函数是否免除csrf认证
+            process_view方法：
+                -检查视图是否被@csrf_exempt
+                -去请求体或cookie中获取到token
+
+        4. csrf_token认证
+            情况一、
+                from django.views.decorators.csrf import csrf_exempt
+                视图函数加上@csrf_exempt -- 免除认证
+            情况二、
+                from django.views.decorators.csrf import csrf_protect
+                当全局中都不使用csrf_token的时候
+                视图函数加上@csrf_protect -- 需要认证
+
+        5. CBV的csrf_token加装饰器操作
+            from django.views.decorators.csrf import csrf_exempt, csrf_protect
+            from django.utils.decorators import method_decorator
+
+            方法一、
+            class HomeView(View):
+                @method_decorator(csrf_exempt)
+                def dispatch(self, request, *args, **kwargs):
+                    return super(HomeView, self).dispatch(request, *args, **kwargs)
+
+                def get(self, request):
+                    pass
+
+                def post(self, request):
+                    pass
+
+            方法二、
+
+                @method_decorator(csrf_exempt, name='dispatch')
+                class HomeView(View):
+                    def get(self, request):
+                        pass
+
+                    def post(self, request):
+                        pass
