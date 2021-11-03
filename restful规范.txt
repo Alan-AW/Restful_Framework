@@ -8,9 +8,77 @@
         - 对参数的封装
 
 二、restful规范(建议)
-    1.根据method不同来做不同的操作(FBV)，不需要更多的路由，只需要一条路由即可
+    1.接口开发
+        根据method不同来做不同的操作(FBV)，不需要更多的路由，只需要一条路由即可
         1.1 -FBV中做判断：if method == 'GET'\if method == 'POST'\PUT\DELETE....
         1.2 -CBV中直接编写对应方法: def get(self, request)\post\put\delete...
-    
-三、django rest framework框架
+    2.API设计
+        协议：
+            建议使用https
+        域名：
+            https://api.xxx.com         会存在跨域问题
+            https://xxx.com/api/...     非常简单
+        版本：
+            URL：https://xxx.com/api/v1/...      版本共存的情况下使用不同的版本标识自主选择
+        路径(面向资源编程)：
+            视 网络上任何信息都是资源，均使用名词表示
+        method：
+            GET: 获取资源
+            POST: 新建
+            PUT: 更新（所有的）
+            PATCH: 更新（局部属性）
+            DELETE: 删除
+        过滤：
+            通过URL上传参的形式传递搜索条件
+            https://xxx.com/api/v1/filter?limit=10 -- 指定返回记录的数量
+            https://xxx.com/api/v1/filter?offset=10 -- 指定返回记录的开始位置
+            https://xxx.com/api/v1/filter?page=10&per_page=100 -- 指定第几页，以及每页的记录数量
+            https://xxx.com/api/v1/filter?sort_by=number&order=id -- 指定返回结果按照那个属性排序，以及排序顺序（规则）
+            https://xxx.com/api/v1/filter?animal_type_id=1 -- 指定筛选条件
+        状态码+code：状态码一般来说能表示的信息较少，尽量使用code
+            200 OK - [GET]：服务器成功返回用户请求的数据，该操作是幂等的（Idempotent）。
+            201 CREATED - [POST/PUT/PATCH]：用户新建或修改数据成功。
+            202 Accepted - [*]：表示一个请求已经进入后台排队（异步任务）
+            204 NO CONTENT - [DELETE]：用户删除数据成功。
+            400 INVALID REQUEST - [POST/PUT/PATCH]：用户发出的请求有错误，服务器没有进行新建或修改数据的操作，该操作是幂等的。
+            401 Unauthorized - [*]：表示用户没有权限（令牌、用户名、密码错误）。
+            403 Forbidden - [*] 表示用户得到授权（与401错误相对），但是访问是被禁止的。
+            404 NOT FOUND - [*]：用户发出的请求针对的是不存在的记录，服务器没有进行操作，该操作是幂等的。
+            406 Not Acceptable - [GET]：用户请求的格式不可得（比如用户请求JSON格式，但是只有XML格式）。
+            410 Gone -[GET]：用户请求的资源被永久删除，且不会再得到的。
+            422 Unprocesable entity - [POST/PUT/PATCH] 当创建一个对象时，发生一个验证错误。
+            500 INTERNAL SERVER ERROR - [*]：服务器发生错误，用户将无法判断发出的请求是否成功。
 
+            官方完整状态码：http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+        错误处理：状态码是4xx时，应返回错误信息，error当做key
+            {
+                error: "Invalid API key"
+            }
+        返回结果：针对不同操作，服务器向用户返回的结果应该符合以下规范。
+            GET /collection：返回资源对象的列表（数组）
+            GET /collection/resource：返回单个资源对象
+            POST /collection：返回新生成的资源对象
+            PUT /collection/resource：返回完整的资源对象
+            PATCH /collection/resource：返回完整的资源对象
+            DELETE /collection/resource：返回一个空文档
+        Hypermedia API：
+            RESTful API最好做到Hypermedia，即返回结果中提供链接，连向其他API方法，使得用户不查文档，也知道下一步应该做什么。
+            {"link": {
+              "rel":   "collection https://www.example.com/zoos",
+              "href":  "https://api.example.com/zoos",
+              "title": "List of zoos",
+              "type":  "application/vnd.yourformat+json"
+            }}
+
+**************************************************************************************************
+认识restful api规范
+    10个规则
+    其本质就是一个规范，定义一些规范使得前后端开发人员更容易配合开发项目，前后端开发人员更容易记住一些系统的操作，或者对于数据的获取途径更清晰
+    目标就是在URL上体现出对api的一些操作，不使用这个restful规范，相同的功能也一样能实现，但是需要非常多的URL路由，
+    比如版本，状态码，method等，遵循这个规范，那么前后端的开发人员都知道去那个地址获取到自己需要的数据，宗旨就是使得开发过程更加统一。
+    可以讲一件在使用的过程中真实发生的事情，，，
+**************************************************************************************************
+
+三、django rest framework框架
+    库支持：djangorestframework
+    from rest_framework.views import APIView
