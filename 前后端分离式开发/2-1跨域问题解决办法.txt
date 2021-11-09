@@ -1,0 +1,85 @@
+1.安装插件
+    django-cors-headers
+2.注册APP
+    INSTALLED_APPS = [
+        'corsheaders',
+    ]
+3.注册中间件(建议开头，或者至少在csrf认证之前)
+    MIDDLEWARE_CLASSES = [
+        'corsheaders.middleware.CorsMiddleware',
+    ]
+4.设置settings白名单 OR 开启全局白名单
+    CORS_ORIGIN_ALLOW_ALL = True  # 所有域名都可以跨域访问
+    CORS_ORIGIN_WHITELIST = [  # 只有localhost:3000才可以跨域访问
+        'localhost:3000'
+    ]
+    4.1白名单也可以使用正则
+        CORS_ORIGIN_REGEX_WHITELIST  =  [
+            r"^https://\w+\.example\.com$",
+        ]
+
+****可选配置****
+*实际请求所允许的HTTP方式列表
+    # 默认为
+    CORS_ALLOW_METHODS  =  [
+        'DELETE' ，
+        'GET' ，
+        'OPTIONS' ，
+        'PATCH' ，
+        'POST' ，
+        'PUT' ，
+    ]
+
+    # 当有自定义的方式时，可使用以下配置扩展
+    from corsheaders.defaults import default_methods
+
+    CORS_ALLOW_METHODS = list(default_methods) + [
+        'POKE',
+    ]
+*实际请求时可以使用的非标准HTTP header 的列表
+    # 默认为
+    CORS_ALLOW_HEADERS  =  [
+        ''accept' ，
+        'accept-encoding' ，
+        'authorization' ，
+        'content-type' ，
+        'dnt' ，
+        'origin' ，
+        'user-agent' ，
+        'x-csrftoken' ，
+        'x-requested-with' ，
+    ]
+
+    # 也可自定义扩展
+    from corsheaders.defaults import default_headers
+
+    CORS_ALLOW_HEADERS = list(default_headers) + [
+        'my-custom-header',
+    ]
+*信号的使用
+    场景：需要将白名单中允许的地址设置为动态可配置的，比如就是数据库中的一张表，可在后台添加或者删除可允许的地址，
+    此时可用到corsheaders.signals模块中的check_request_enabled来解决。
+    # myapp/handlers.py
+        from corsheaders.signals import check_request_enabled
+
+        from myapp.models import MySite
+
+        def cors_allow_mysites(sender, request, **kwargs):
+            return MySite.objects.filter(host=request.host).exists()
+
+        check_request_enabled.connect(cors_allow_mysites)
+
+    # myapp/__init__.py
+
+        default_app_config = 'myapp.apps.MyAppConfig'
+
+    # myapp/apps.py
+
+        from django.apps import AppConfig
+
+        class MyAppConfig(AppConfig):
+            name = 'myapp'
+
+            def ready(self):
+                # Makes sure all signal handlers are connected
+                from myapp import handlers  # noqa

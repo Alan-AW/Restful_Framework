@@ -78,6 +78,9 @@ django FBV、CBV内部原理：
                     -执行process_exception
 
         3. django的csrf_token的实现
+            实现原理：
+                当用户发送GET请求的时候会返回一个随机字符串，当用户发送POST请求的时候，需要将GET请求带过去的随机
+                字符串再带回来进行验证。
             csef认证在中间件process_view中被定义
                 * from django.views.decorators.csrf import csrf_exempt
                 当一个视图函数免除csrf_token验证的时候可以使用一个装饰器：@csrf_exempt
