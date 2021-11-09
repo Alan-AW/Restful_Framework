@@ -67,15 +67,22 @@ class HomeView(APIView):
                                             # 4.获取认证对象进行一步步的认证
                                             self._auththenticate()
                                         --->    def _authenticate(self):
+                                                    
+                                                    # 循环所有认证类
                                                     for authenticator in self.authenticators:
                                                         try:
                                                             # 5.最终认证位置
+                                                            --->执行了自定义类对象的authenticate方法
+                                                                5.1如果authenticate方法抛出异常就会在此处捕获到异常：执行self._not_authenticated()
+                                                                5.2如果没有抛出异常有返回值：必须是一个元组(request.user, request.token)：第85行
+                                                                5.3如果返回None，表示当前用户不管，进行下一个处理
                                                             user_auth_tuple = authenticator.authenticate(self)
                                                             --->    def authenticate(self, request):
                                                                         return (self.force_user, self.force_token)
                                                         except exceptions.APIException:
                                                             self._not_authenticated()
                                                             raise
+                                                        --->上接注释5.2
                                                         if user_auth_tuple is not None:
                                                             self._authenticator = authenticator
                                                             self.user, self.auth = user_auth_tuple
@@ -101,7 +108,7 @@ class HomeView(APIView):
 
 
 """
-如果仅仅实现认证直接写上以下内容即可：
+如果仅仅实现认证直接写上以下内容即可：Django的rest_framework也可以支持全局配置，不必要每个类都这么写一遍...
 
 1.自定义一个认证类
 class MyAuthentication(object):

@@ -16,28 +16,58 @@ def md5(user):
     return m.hexdigest()
 
 
-class AuthView(APIView):
-    def get(self, request, *args, **kwargs):
-        username = request._request.GET.get('username')
-        return JsonResponse(username, safe=False)
+def order_dict():
+    ORDERDICT = {
+        1: {
+            'name': 'girlfriend',
+            'age': 20,
+            'gender': '女',
+            'content': '波大腿长'
+        },
+        2: {
+            'name': '小三',
+            'age': 18,
+            'gender': '女',
+            'content': '波更大腿更长'
+        }
+    }
+    return ORDERDICT
 
+
+class AuthView(APIView):
+    authentication_classes = []  # 不需要进行认证
     def post(self, request, *args, **kwargs):
         ret = {'code': 1000, 'msg': None}
         try:
             name = request._request.POST.get('username')
             pwd = request._request.POST.get('password')
             userObj = UserInfo.objects.filter(username=name, password=pwd).first()
-            if not userObj:
+            if userObj:
+                # 为用户登陆创建随机字符串
+                token = md5(name)
+                # 存在就更新否则就创建
+                UserToken.objects.update_or_create(user=userObj, defaults={'token': token})
+                ret['token'] = token
+            else:
                 ret['code'] = 1001
                 ret['msg'] = '用户名或密码错误'
-            # 为用户登陆创建随机字符串
-            token = md5(name)
-            # 存在就更新否则就创建
-            UserToken.objects.update_or_create(user=userObj, defaults={'token': token})
-            ret['token'] = token
+
         except Exception as e:
             ret['code'] = 1002
             ret['msg'] = '请求异常'
 
         return JsonResponse(ret)
 
+
+class OrderView(APIView):
+    def get(self, request, *args, **kwargs):
+        token = request._request.GET.get('token')
+        if not token:
+            return JsonResponse('用户未登陆!')
+        ret = {'code': 1000, 'msg': None, 'data': None}
+        try:
+            ret['data'] = order_dict()
+        except Exception as e:
+            ret['code'] = 1001
+            ret['msg'] = '访问错误'
+        return JsonResponse(ret)

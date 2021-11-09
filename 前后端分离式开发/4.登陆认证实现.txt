@@ -1,0 +1,55 @@
+1. 认证：
+    a.场景：某些API需要用户登陆成功之后才能够访问；有些API无需登陆即可访问
+
+    b.基本使用认证组件解决认证问题
+        - 创建两张表(用户表和token表-OTOField)
+        - 用户登陆返回token并且保存到数据库(update_or_create方法的使用)
+
+    c.源码认证流程原理
+        4-1认证源码基本流程.jpg
+
+    d.通过源码读取的配置文件进行自定义全局认证的配置或者局部使用
+        全局配置settings中：
+            REST_FRAMEWORK = {
+                'DEFAULT_AUTHENTICATION_CLASSES': [
+                    'API.utils.auth.Authtication'
+                ]
+            }
+        如果不需要全局认证，在视图类中：
+            authentication_classes = []
+
+    e.同时还可以自定义匿名用户信息
+        匿名用户表示所有认证都返回了None，登陆认证失败的用户
+        REST_FRAMEWORK = {
+                'DEFAULT_AUTHENTICATION_CLASSES': [
+                    'API.utils.auth.Authtication'
+                ],
+                'UNAUTHENTICATED_USER': lambda :'匿名用户',  # 表示自定义了匿名用户名称即：request.user = '匿名用户'
+                'UNAUTHENTICATED_TOKEN': None,      # 自定义匿名用户token信息即：request.auth = None
+            }
+
+    f.rest_framework内置认证类
+        1.认证基类(建议所有auth认证都继承该类)：
+            from rest_framework.authentication import BaseAuthentication
+            该类的源码中已经声名了必要的两个类方法，继承之后直接重写authenticate方法即可：
+            class BaseAuthentication:
+                def authenticate(self, request):
+                    # 自定义认证方法
+                    raise NotImplementedError(".authenticate() must be overridden.")
+
+                def authenticate_header(self, request):
+                    # 必须要写的方法： 本方法是认证失败的时候给浏览器返回的响应头
+                    pass
+        2.浏览器自带机制
+            from rest_framework.authentication import BasicAuthentication
+            如果在自定义认证的视图类中使用了该类的认证方法，那么浏览器会自动进行弹窗提示输入用户信息，然后加密放入请求头发送到后端进行验证
+                HTTP_AUTHORIZATION: 'basic(username:password)base64加密' --> 放入请求头发送到服务器进行解密然后认证
+            class HomeView(APIView):
+                authentication_classes = [BasicAuthentication]
+
+        3.其他认证机制
+            from rest_framework.authentication import SessionAuthentication, TokenAuthentication, RemoteUserAuthentication
+            SessionAuthentication
+            TokenAuthentication
+            RemoteUserAuthentication
+            这三个了解即可，基本不会用上这三个认证机制，他们都是基于django的session、token...来实现的，本质上都是获取用户的信息发送到后端进行认证

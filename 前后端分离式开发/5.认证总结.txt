@@ -1,0 +1,30 @@
+1.认证的使用
+    -在外部文件中创建类:继承from rest_framework.authentication import BaseAuthentication 实现 authenticate 方法
+    -返回值：
+        -None：不做处理，进行下一个认证
+        -raise：from rest_framework import exceptions -- raise exceptions.AuthenticationFailed('用户认证失败')
+        -(obj1, obj2)：obj1赋值给 request.user, obj2赋值给 request.auth
+    -局部使用：
+        视图类中写一个静态字段：authentication_classes = []
+    -全局使用(认证类的路径)：
+        settings.py
+        REST_FRAMEWORK = {
+            'DEFAULT_AUTHENTICATION_CLASSES': ['API.utils.auth.Authtication'],
+            'UNAUTHENTICATED_USER': lambda :'匿名用户',  # 表示自定义了匿名用户名称即：request.user = '匿名用户'
+            'UNAUTHENTICATED_TOKEN': None,      # 自定义匿名用户token信息即：request.auth = None
+        }
+
+2.认证的执行流程
+    -dispatch
+        -封装request
+            -获取定义的认证类，视图中未定义就使用全局，否则就使用自定义的认证类；通过列表生成式创建一个认证的对象列表
+        -initial认证
+            -perform_authentication
+                request.user(内部循环认证对象列表)
+
+    1.请求到来 走 dispatch方法
+    2.dispatch首先对request进行封装，返回了一个Request()包含原生request对象的对象
+    3.dispatch中的try代码块中进行了用户认证
+    4.执行认证的时候去新的request对象中找user对象：request.user
+    5.在Request类中的user方法被定义成了一个属性，该方法去获取到了之前封装在request中的所有的认证对象，
+        并且循环这个对象去执行这个对象的authenticate方法
