@@ -6,6 +6,7 @@ from rest_framework import exceptions
 from API.models import *
 import hashlib
 import time
+from API.utils.permission import MyPermission
 
 
 def md5(user):
@@ -17,6 +18,7 @@ def md5(user):
 
 
 def order_dict():
+    # 模拟订单
     ORDERDICT = {
         1: {
             'name': 'girlfriend',
@@ -37,6 +39,7 @@ def order_dict():
 class AuthView(APIView):
     authentication_classes = []  # 不需要进行认证
     def post(self, request, *args, **kwargs):
+        self.dispatch
         ret = {'code': 1000, 'msg': None}
         try:
             name = request._request.POST.get('username')
@@ -58,8 +61,9 @@ class AuthView(APIView):
 
         return JsonResponse(ret)
 
-
+from rest_framework.permissions import AllowAny
 class OrderView(APIView):
+    # 订单(只让SVIP客户访问)
     def get(self, request, *args, **kwargs):
         token = request._request.GET.get('token')
         if not token:

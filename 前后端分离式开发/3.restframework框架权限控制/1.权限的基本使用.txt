@@ -1,0 +1,26 @@
+1.权限
+    问题：不同的视图不同的权限可以访问
+    权限的基本实现：
+        1.外部文件中写上一个类，实现has_permission方法
+            class MyPermission(object):
+                def has_permission(self, request, view):
+                    if request._request.user.user_type != 3:
+                        return False
+                    return True
+
+        2.视图类中写上配置(如果配置了全局切手动写上配置为空列表，那么就取消了权限的控制)：
+            permission_classes = [MyPermission]
+
+        3.根据源码的配置信息中也可以查询到全局配置方法：
+            REST_FRAMEWORK = {
+                ...
+                # 全局权限配置
+                'DEFAULT_PERMISSION_CLASSES': [
+                    'API.utils.permission.SVIPPermission'
+                ]
+            }
+
+2.源码流程：
+    1.请求到来，封装reqeust
+    2.进行认证(对象列表)
+    3.验证权限(对象列表)

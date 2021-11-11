@@ -111,9 +111,14 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 全局认证配置
+# API相关配置
 REST_FRAMEWORK = {
+    # 全局认证配置
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'API.utils.auth.Authtication'
+    ],
+    # 全局权限配置
+    'DEFAULT_PERMISSION_CLASSES': [
+        'API.utils.permission.SVIPPermission'
     ]
 }

@@ -1,0 +1,24 @@
+1.按照代码规范应该继承自带的权限类：
+    from rest_framework.permissions import BasePermission
+
+    class MyPermission(BasePermission):
+        def has_permission(self, request, view):
+            ...
+            return
+
+2.允许所有人使用的权限:
+    from rest_framework.permissions import AllowAny
+
+3.是否认证以及其他内置默认的权限
+    from rest_framework.permissions import AllowAny
+    IsAuthenticated
+    IsAdminUser
+    IsAuthenticatedOrReadOnly
+    DjangoModelPermissions
+    DjangoModelPermissionsOrAnonReadOnly
+    DjangoObjectPermissions
+
+4.自定义权限返回值:
+    True -- 有权访问
+    False - 无权访问
+    不必要抛出异常，dispatch中已经多出进行了异常捕捉了
