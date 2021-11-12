@@ -115,10 +115,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     # 全局认证配置
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'API.utils.auth.Authtication'
+        'API.utils.auth.Authtication',
     ],
     # 全局权限配置
     'DEFAULT_PERMISSION_CLASSES': [
-        'API.utils.permission.SVIPPermission'
-    ]
+        'API.utils.permission.SVIPPermission',
+    ],
+
 }
+
+# 全局用户访问控制时间（默认10秒）
+VISIT_CONTORE_TIME = 10
+# 全局用户访问控制次数（默认限制3次）
+VISIT_CONTORE_LENGTH = 3

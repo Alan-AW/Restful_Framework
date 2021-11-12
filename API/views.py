@@ -6,7 +6,8 @@ from rest_framework import exceptions
 from API.models import *
 import hashlib
 import time
-from API.utils.permission import MyPermission
+from API.utils.permission import SVIPPermission
+from API.utils.throttle import VisitThrottle
 
 
 def md5(user):
@@ -38,6 +39,8 @@ def order_dict():
 
 class AuthView(APIView):
     authentication_classes = []  # 不需要进行认证
+    permission_classes = []  # 不需要权限就能访问
+    throttle_classes = []  # 不进行节流控制
     def post(self, request, *args, **kwargs):
         self.dispatch
         ret = {'code': 1000, 'msg': None}
@@ -61,7 +64,7 @@ class AuthView(APIView):
 
         return JsonResponse(ret)
 
-from rest_framework.permissions import AllowAny
+
 class OrderView(APIView):
     # 订单(只让SVIP客户访问)
     def get(self, request, *args, **kwargs):
@@ -75,3 +78,5 @@ class OrderView(APIView):
             ret['code'] = 1001
             ret['msg'] = '访问错误'
         return JsonResponse(ret)
+
+
