@@ -25,13 +25,13 @@ def order_dict():
             'name': 'girlfriend',
             'age': 20,
             'gender': '女',
-            'content': '波大腿长'
+            'content': '善解人意'
         },
         2: {
             'name': '小三',
             'age': 18,
             'gender': '女',
-            'content': '波更大腿更长'
+            'content': '温柔体贴'
         }
     }
     return ORDERDICT

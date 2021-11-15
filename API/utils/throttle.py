@@ -1,17 +1,18 @@
-from rest_framework.throttling import BaseThrottle
+from rest_framework.throttling import BaseThrottle, SimpleRateThrottle
 from django.conf import settings as sys
 import time
 
 VISIT_RECORD = {}
 
-
+# 自定义节流方法
+"""
 class VisitThrottle(BaseThrottle):
     def __init__(self):
         self.history = None
 
     def allow_request(self, request, view):
         # 获取用户IP
-        remote_addr = request._request.META.get('REMOTE_ADDR')
+        remote_addr = self.get_ident(request)
         c_time = time.time()
         if remote_addr not in VISIT_RECORD:
             VISIT_RECORD[remote_addr] = [c_time, ]
@@ -35,3 +36,20 @@ class VisitThrottle(BaseThrottle):
         history = self.history[-1]
         wait_time = sys.VISIT_CONTORE_TIME - (c_time - history)
         return wait_time
+"""
+
+
+# 内置节流方法 -- 匿名用户
+class VisitThrottle(SimpleRateThrottle):
+    scope = 'happy'
+
+    def get_cache_key(self, request, view):
+        return self.get_ident(request)
+
+
+# 内置节流方法 -- 登陆用户
+class UserThrottle(SimpleRateThrottle):
+    scope = 'user'
+
+    def get_cache_key(self, request, view):
+        return request.user.username

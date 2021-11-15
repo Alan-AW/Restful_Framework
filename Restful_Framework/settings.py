@@ -121,9 +121,20 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'API.utils.permission.SVIPPermission',
     ],
+    # 全局节流类的地址
+    'DEFAULT_THROTTLE_CLASSES': [
+        'API.utils.throttle.VisitThrottle'
+    ],
+    # 内置节流配置
+    'DEFAULT_THROTTLE_RATES': {
+        'happy': '3/m',  # 匿名用户3次每分钟
+        'user': '5/m'  # 登陆用户5次每分钟
 
+    }
 }
 
+
+# 自定义节流配置
 # 全局用户访问控制时间（默认10秒）
 VISIT_CONTORE_TIME = 10
 # 全局用户访问控制次数（默认限制3次）

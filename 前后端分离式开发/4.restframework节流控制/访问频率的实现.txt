@@ -1,0 +1,145 @@
+1.节流：
+    控制同一个IP地址在统一时间段内的访问频率（也可以通过用户token来实现，或者两者配合使用）
+    时间段和频率写到settings配置中
+    # 全局用户访问控制时间（默认10秒）
+    VISIT_CONTORE_TIME = 10
+    # 全局用户访问控制次数（默认限制3次）
+    VISIT_CONTORE_LENGTH = 3
+
+    1.外部文件写上一个类，建议继承默认的节流类,实现类方法allow_request进行自定义的节流规则：
+        from rest_framework.throttling import BaseThrottle
+        class VisitThrottle(BaseThrottle):
+            def allow_request(self, request, view):
+                # 获取用户IP与当前时间
+                remote_addr = request._request.META.get('REMOTE_ADDR')
+                c_time = time.time()
+    2.继承Base类之后可以不用实现wait方法，如果要自定义，还是写上吧
+        这个方法可以自定义提示信息，还需要等待多久才可以进行再次访问
+        def wait(self):
+            c_time = time.time()
+            history = self.history[-1]
+            wait_time = sys.VISIT_CONTORE_TIME - (c_time - history)
+            return wait_time
+
+2.源码流程
+    1.dispatch入口
+    2.封装request
+    3.执行initial方法
+    4.在认证、权限过后，进行节流控制
+        self.perform_authentication(request)  - 认证
+        self.check_permissions(request)  - 权限控制
+        self.check_throttles(request)  - 节流控制
+    5.check_throttles(request)方法内部执行了allow_request(request, self)方法
+        所以实现节流控制需要在自定义节流控制的类中重写该方法
+            throttle_durations = []
+            for throttle in self.get_throttles():
+                if not throttle.allow_request(request, self):
+                    throttle_durations.append(throttle.wait())
+
+3.通过源码的配置文件可以查询到全局节流配置
+    # API相关配置
+    REST_FRAMEWORK = {
+        # 全局认证配置
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'API.utils.auth.Authtication',
+        ],
+        # 全局权限配置
+        'DEFAULT_PERMISSION_CLASSES': [
+            'API.utils.permission.SVIPPermission',
+        ],
+        # 全局节流配置
+        'DEFAULT_THROTTLE_CLASSES': [
+            'API.utils.throttle.VisitThrottle'
+        ],
+    }
+
+4.取消节流控制
+    视图类中写上配置：
+        throttle_classes = []  # 不进行节流控制
+
+5.内置的自定义Base节流类
+    在BaseThrottle类中，实现了三个类方法：
+        allow_request   实现访问频率控制
+        get_ident       获取IP
+        wait            等待时间提示信息
+
+6.内置节流类: SimpleRateThrottle
+    在SimpleRateThrottle这个类中已经实现了简单的自定义节流方法，只需要几行配置便可实现节流控制
+    使用方法：
+        # 内置节流方法 -- 匿名用户
+        class VisitThrottle(SimpleRateThrottle):
+            scope = 'happy'
+
+            def get_cache_key(self, request, view):
+                return self.get_ident(request)
+
+
+        # 内置节流方法 -- 登陆用户
+        class UserThrottle(SimpleRateThrottle):
+            scope = 'user'
+
+            def get_cache_key(self, request, view):
+                return request.user.username
+    配置文件：
+        # API相关配置
+        REST_FRAMEWORK = {
+            # 全局认证配置
+            'DEFAULT_AUTHENTICATION_CLASSES': [
+                'API.utils.auth.Authtication',
+            ],
+            # 全局权限配置
+            'DEFAULT_PERMISSION_CLASSES': [
+                'API.utils.permission.SVIPPermission',
+            ],
+            # 全局节流类的地址
+            'DEFAULT_THROTTLE_CLASSES': [
+                'API.utils.throttle.VisitThrottle'
+            ],
+            # 内置节流配置
+            'DEFAULT_THROTTLE_RATES': {
+                'happy': '3/m',  # 匿名用户3次每分钟
+                'user': '5/m'  # 登陆用户5次每分钟
+            }
+        }
+
+    ***对于内置节流频率的配置，在源码中有一个方法对这个配置进行了读取和操作:***
+        def parse_rate(self, rate):
+            if rate is None:
+                return (None, None)
+            num, period = rate.split('/')
+            num_requests = int(num)
+            duration = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}[period[0]]
+            return (num_requests, duration)
+        这个方法对配置进行的读取操作都是写死的多少秒，可以重写这个类来进行自定义的节流控制，
+        根据这个方法的返回值，可以看到返回的元祖中就是(次数，秒数),重写这个方法直接返回频率和时间就行了
+        也可以将这两个参数放到配置中实现自定义的各种频率限制
+
+总结
+    a.基本使用
+        -自定义节流：在外部文件中写一个类，并且继承BaseThrottle，实现allow_request、wait方法
+        -内置节流：  在外部文件中写一个类，并且继承SimpleRateThrottle，实现get_cache_key、scope = 'key' (配置文件中的key)
+            对于自定义节流一般有两种情况：
+                1.对于匿名用户的控制
+                    匿名用户的控制在get_cache_key方法中可以 返回 匿名用户的IP作为key
+                2.对于登陆用户的控制
+                    登陆用户的控制在get_cache_key方法中可以 返回 用户的用户名，或者id进行唯一标识的key
+    b.全局节流和局部节流
+        1.全局节流：在视图类中写上配置
+            class AuthView(APIView):
+                throttle_classes = [VisitThrottle]
+                def get(self, request):
+                    pass
+
+        2.局部节流：配置文件写上接力控制类地址
+            REST_FRAMEWORK = {
+                ......
+                # 全局节流类的地址
+                'DEFAULT_THROTTLE_CLASSES': [
+                    'API.utils.throttle.UserThrottle'
+                ],
+                # 内置节流配置
+                'DEFAULT_THROTTLE_RATES': {
+                    'happy': '3/m',  # 匿名用户3次每分钟
+                    'user': '5/m'  # 登陆用户5次每分钟
+                }
+            }
