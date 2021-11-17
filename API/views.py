@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views import View
 from rest_framework.views import APIView
 from rest_framework import exceptions
+from rest_framework.versioning import BaseVersioning, QueryParameterVersioning
 from API.models import *
 import hashlib
 import time
@@ -41,11 +42,12 @@ class AuthView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
     throttle_classes = []  # 不进行节流控制
+    versioning_class = BaseVersioning  # 版本控制
     def post(self, request, *args, **kwargs):
         self.dispatch
         ret = {'code': 1000, 'msg': None}
         try:
-            name = request._request.POST.get('username')
+            name = request.query_params.get('username')
             pwd = request._request.POST.get('password')
             userObj = UserInfo.objects.filter(username=name, password=pwd).first()
             if userObj:

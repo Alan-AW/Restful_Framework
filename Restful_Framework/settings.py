@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'API.apps.ApiConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -129,8 +130,11 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'happy': '3/m',  # 匿名用户3次每分钟
         'user': '5/m'  # 登陆用户5次每分钟
-
-    }
+    },
+    # 基于GET方式传参的版本控制
+    'DEFAULT_VERSION': 'v1',  # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本范围
+    'VERSION_PARAM': 'version',  # 后台获取版本的参数名词
 }
 
 

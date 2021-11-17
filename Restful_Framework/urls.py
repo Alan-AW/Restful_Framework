@@ -1,5 +1,5 @@
 from django.urls import path
-from API.views import *
+from API.views import AuthView, OrderView
 
 urlpatterns = [
     # 用户登陆验证
