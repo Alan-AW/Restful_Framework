@@ -9,6 +9,8 @@ import hashlib
 import time
 from API.utils.permission import SVIPPermission
 from API.utils.throttle import VisitThrottle
+from API.utils.version import GetParamVersion
+
 
 
 def md5(user):
@@ -82,3 +84,9 @@ class OrderView(APIView):
         return JsonResponse(ret)
 
 
+class UserView(APIView):
+    def get(self, request, *args, kwargs):
+        self.dispatch
+        response = dict()
+        version = request.version
+        return JsonResponse(version)

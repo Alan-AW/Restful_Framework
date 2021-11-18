@@ -1,0 +1,116 @@
+版本的基本使用
+    1.URL传参进行获取（自定义）--不推荐
+        实现方式：
+            在外部文件中自定义类，并且继承BaseVersioning基类，实现determine_version方法
+            from rest_framework.versioning import BaseVersioning
+            class GetParamVersion(BaseVersioning):
+                def determine_version(self, request, *args, **kwargs):
+                    version = request.query_params.get('version')
+                    return version
+            **由于dispatch方法对request进行了封装，原生request对象被封装成了_request，如果要获取原生request中的GET参数可以使用：
+                request.query_param.GET.get('param')
+        使用方式：
+            class XXXView(APIView):
+                versioning_class = GetParamVersion
+                def get(self, request, *args, **kwargs):
+                    pass
+                ......
+
+    2.GET方式内置方法及配置 -- 不推荐
+        使用方式：
+            from rest_framework.versioning import QueryParameterVersioning
+            class XXXView(APIView):
+                versioning_class = QueryParameterVersioning
+                def get(self, request, *args, **kwargs):
+                    version = request.version
+                    pass
+                ......
+
+        settings配置
+            REST_FRAMEWORK = {
+                ...
+                # 基于GET方式传参的版本控制
+                'DEFAULT_VERSION': 'v1',  # 默认版本
+                'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本范围
+                'VERSION_PARAM': 'version',  # 后台获取版本的参数名词
+            }
+
+            注册APP
+                rest_framework -- 当版本不对的时候会看到提示信息
+
+    3.自定获取URL路径中的版本信息 -- 推荐
+        1.路由系统(也可以将版本的正则写在分发的urls.py中)
+            urlpatterns = [
+                ...
+                re_path(r'^api/(?P<version>[v1|v2]+)', include(('API.urls', 'API'), namespace='api')),
+                ...
+            ]
+        2.视图：
+            from rest_framework.versioning import URLPathVerioning
+            class XXXView(APIView):
+                def get(self, request, *args, **kwargs):
+                    version = request.version
+                    pass
+                ......
+
+        2.settings配置
+            REST_FRAMEWORK = {
+                ...
+                # 自动获取URL中的版本信息配置
+                'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVerioning'
+            }
+
+    4.通过源码可以找到版本控制中的内置反向生成版本相关的URL路由方法
+        url = request.versioning_scheme.reverse(viewname='路由别名', request=request)
+
+
+总结：
+    settings配置：
+        REST_FRAMEWORK = {
+           ...
+            # 版本控制
+            # 内置的自动获取URL中的版本信息（也可以替换成自定义的路径）
+            'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVerioning',
+            # 版本控制基本配置
+            'DEFAULT_VERSION': '1',  # 默认版本
+            'ALLOWED_VERSIONS': ['1', '2'],  # 允许的版本范围
+            'VERSION_PARAM': 'version',  # 后台获取版本的参数名词
+        }
+    路由系统：
+        urlpatterns = [
+            re_path(r'^api/(?P<version>[1|2]+)', include(('API.urls', 'API'), namespace='api)),
+        ]
+
+        urlpatterns = [
+            re_path('user/$', View.as_view(), name='user'),
+        ]
+    视图函数：
+        class UserView(APIView):
+            def get(self, request, *args, **kwargs):
+                # 获取版本
+                    request.version
+                # 获取处理版本的对象
+                    rquest.versioning_scheme
+                # 使用组件反向生成当前版本URL
+                    url = request.versioning_scheme.reverse(versionname='xxx', request=request)
+                # 反向生成URL
+                    url = reverse(versionname='xxx', kwargs={'version': 1})
+
+版本的源码执行流程：
+    1.请求到来进入dispatch方法
+    2.dispatch方法对request进行封装
+    3.处理版本信息
+        版本信息的处理：
+            # Determine the API version, if versioning is in use.
+
+        --->version, scheme = self.determine_version(request, *args, **kwargs)
+
+            request.version, request.versioning_scheme = version, scheme
+
+            # Ensure that the incoming request is permitted
+            self.perform_authentication(request) -- 认证
+            self.check_permissions(request)  -- 权限
+            self.check_throttles(request)  -- 节流
+    4.进入认证系统
+    5.进行权限校验
+    6.进行节流控制

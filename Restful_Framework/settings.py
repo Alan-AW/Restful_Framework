@@ -131,12 +131,14 @@ REST_FRAMEWORK = {
         'happy': '3/m',  # 匿名用户3次每分钟
         'user': '5/m'  # 登陆用户5次每分钟
     },
-    # 基于GET方式传参的版本控制
+    # 版本控制
+    # 内置的自动获取URL中的版本信息（也可以替换成自定义的路径）
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVerioning',
+    # 版本控制基本配置
     'DEFAULT_VERSION': 'v1',  # 默认版本
     'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本范围
     'VERSION_PARAM': 'version',  # 后台获取版本的参数名词
 }
-
 
 # 自定义节流配置
 # 全局用户访问控制时间（默认10秒）
