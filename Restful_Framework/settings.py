@@ -64,7 +64,7 @@ WSGI_APPLICATION = 'Restful_Framework.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'api_databases',
+        'NAME': 'api_data',
         'USER': 'root',
         'PASSWORD': 'xcdh560',
         'HOST': '127.0.0.1',
@@ -128,12 +128,12 @@ REST_FRAMEWORK = {
     ],
     # 内置节流配置
     'DEFAULT_THROTTLE_RATES': {
-        'happy': '3/m',  # 匿名用户3次每分钟
-        'user': '5/m'  # 登陆用户5次每分钟
+        'happy': '8/m',  # 匿名用户3次每分钟
+        'user': '10/m'  # 登陆用户5次每分钟
     },
     # 版本控制
     # 内置的自动获取URL中的版本信息（也可以替换成自定义的路径）
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVerioning',
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     # 版本控制基本配置
     'DEFAULT_VERSION': 'v1',  # 默认版本
     'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本范围

@@ -12,7 +12,6 @@ from API.utils.throttle import VisitThrottle
 from API.utils.version import GetParamVersion
 
 
-
 def md5(user):
     # 生成随机token字符串
     ctime = str(time.time())
@@ -44,12 +43,12 @@ class AuthView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
     throttle_classes = []  # 不进行节流控制
-    versioning_class = BaseVersioning  # 版本控制
+    versioning_class = GetParamVersion  # 版本控制
     def post(self, request, *args, **kwargs):
         self.dispatch
         ret = {'code': 1000, 'msg': None}
         try:
-            name = request.query_params.get('username')
+            name = request._request.POST.get('username')
             pwd = request._request.POST.get('password')
             userObj = UserInfo.objects.filter(username=name, password=pwd).first()
             if userObj:
@@ -85,8 +84,8 @@ class OrderView(APIView):
 
 
 class UserView(APIView):
-    def get(self, request, *args, kwargs):
+    def get(self, request, *args, **kwargs):
         self.dispatch
         response = dict()
-        version = request.version
-        return JsonResponse(version)
+        v = request.version
+        return JsonResponse(v, safe=False)
