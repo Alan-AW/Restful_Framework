@@ -1,1 +1,48 @@
 rest framework解析器
+    -全局配置的使用：
+        REST_FRAMEWORK = {
+            ....
+            # 解析器
+            'DEFAULT_PARSER_CLASSES': [
+                'rest_framework.parsers.JSONParser',  # 请求头：application/json
+                'rest_framework.parsers.FormParser',  # 请求头：application/x-www-form-urlencoded
+                '......FileUploadParser'              # 请求头：*/*  --- 所有格式都支持
+                '......MultiPartParser'               # 请求头：multipart/form-data
+            ]
+        }
+
+    -视图获取数据：
+        request.data
+
+    -源码流程 & 本质
+        -本质：根据请求头的不同匹配不同的解析器，对请求体进行解析，然后返回解析之后的内容
+            1.获取用户请求头
+            2.获取用户请求体
+            3.根据用户请求头和配置文件parser_classes = [JSONParser, FormParser]中支持的请求头进行比较
+            4.匹配解析器进行解析
+            5.将解析结果赋值给request.data
+            扩展http协议：
+                请求方法：
+                    get\post\put\patch\delete\
+                请求头：
+                    accept,cookie,状态码,host,url,useragent,Content-Type
+                状态码：
+                    200系列\300系列\400系列\500系列
+
+        -源码流程：
+            -dispatch方法触发对request进行封装
+            -在用户认证之前调用parsers=self.get_parsers()方法，
+                该方法返回一个对象列表
+                return [parser() for parser in self.parser_classes]
+                将所有配置上的解析器封装到request对象中
+            ****然后视图函数调用request.data方法的时候，data方法又调用了parse方法进行了解析的处理
+            -真正触发解析器的是request.data执行了这个方法：
+                self._load_data_and_files()
+                --->self._data, self._files = self._parse()
+                    --->parser = self.negotiator.select_parser(self, self.parsers)
+                        --->在DefaultContentNegotiation类中进行了解析器的匹配
+                                    for parser in parsers:
+                                        if media_type_matches(parser.media_type, request.content_type):
+                                            --->return lhs.match(rhs)  # 匹配请求头
+                                            return parser  # 匹配成功之后返回解析器
+                                    return None

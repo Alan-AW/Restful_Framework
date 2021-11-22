@@ -138,6 +138,11 @@ REST_FRAMEWORK = {
     'DEFAULT_VERSION': 'v1',  # 默认版本
     'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本范围
     'VERSION_PARAM': 'version',  # 后台获取版本的参数名词
+    # 解析器
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+    ]
 }
 
 # 自定义节流配置

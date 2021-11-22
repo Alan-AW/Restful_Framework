@@ -99,7 +99,7 @@ class UserView(APIView):
 class ParserView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
-    parser_classes = [JSONParser, FormParser]
+    # parser_classes = [JSONParser, FormParser]  # 解析器，全局已配置
     def post(self, request, *args, **kwargs):
         """
         使用了 parser_classes = [JSONParser] 该配置之后，表示服务器允许用户发送JSON格式数据
