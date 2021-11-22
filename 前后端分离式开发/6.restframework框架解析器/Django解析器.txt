@@ -1,0 +1,52 @@
+Django解析器
+    Django的request.POST 和 request.body
+    *在同时满足了以下两个条件的时候POST请求中传递的数据在request.POST中才会存在，否则request.POST中是拿不到数据的
+    1.请求头要求：
+        Content-Type：application/x-www-form-urlencoded, request.POST中才会有值(去request.body解析数据)
+    2.数据格式要求：
+        name=xxx&pwd=xxx&xxx=xxx&...
+    如：
+        1.form 表单提交
+            --内部会自动转换成标准格式
+            <form>
+                <input type="text">
+                <input type="password">
+                <input type="submit">
+            </form>
+        2.ajax提交
+            --->POST和body都有值
+                $.ajax({
+                    url: 'xxx',
+                    type: 'post',
+                    data: {
+                        name: 'jason',      --内部会自动转换成标准格式
+                    },
+                    success: function(data) {
+                        ..............
+                    },
+                })
+
+            --->POST没有值，body有值
+                $.ajax({
+                    url: 'xxx',
+                    type: 'post',
+                    *headers: {'Content-Type': 'application/json'}
+                    *data: {
+                        name: 'jason',      --内部会自动转换成标准格式
+                    },
+                    success: function(data) {
+                        ..............
+                    },
+                })
+
+            --->POST没有值，body有值
+                $.ajax({
+                    url: 'xxx',
+                    type: 'post',
+                    *headers: {'Content-Type': 'application/json'}
+                    *data: JSON.stringfy({name: 'jason', age: 18})
+                    success: function(data) {
+                        ..............
+                    },
+                })
+                --->后端直接获取该字典：json.loads(request.body)

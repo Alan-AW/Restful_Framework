@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views import View
 from rest_framework.views import APIView
 from rest_framework import exceptions
+from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.versioning import BaseVersioning, QueryParameterVersioning
 from API.models import *
 import hashlib
@@ -39,6 +40,7 @@ def order_dict():
     return ORDERDICT
 
 
+# 认证
 class AuthView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
@@ -68,6 +70,7 @@ class AuthView(APIView):
         return JsonResponse(ret)
 
 
+# 权限
 class OrderView(APIView):
     # 订单(只让SVIP客户访问)
     def get(self, request, *args, **kwargs):
@@ -83,9 +86,36 @@ class OrderView(APIView):
         return JsonResponse(ret)
 
 
+# 版本
 class UserView(APIView):
     def get(self, request, *args, **kwargs):
         self.dispatch
         response = dict()
         v = request.version
         return JsonResponse(v, safe=False)
+
+
+# 解析器：
+class ParserView(APIView):
+    authentication_classes = []  # 不需要进行认证
+    permission_classes = []  # 不需要权限就能访问
+    parser_classes = [JSONParser, FormParser]
+    def post(self, request, *args, **kwargs):
+        """
+        使用了 parser_classes = [JSONParser] 该配置之后，表示服务器允许用户发送JSON格式数据
+        注意：他只能解析content-type: application/json的请求头，其他的不做解析
+        FormParser可以解析content-type: application/x-www-form-urlencoded。
+        比如：请求头可以是：content-type: application/json 与 json格式的类字典数据
+        """
+
+        print(request.data)
+
+        """
+    --->1.获取用户请求头
+        2.获取用户请求体
+        3.根据用户请求头和parser_classes = [JSONParser, FormParser]中支持的请求头进行比较
+        4.匹配解析器进行解析
+        5.将解析结果赋值给request.data
+        """
+
+        return JsonResponse('parser', safe=False)
