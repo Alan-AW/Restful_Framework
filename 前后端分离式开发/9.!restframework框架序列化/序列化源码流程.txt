@@ -1,0 +1,45 @@
+序列化源码流程
+    一、实例化时的区分处理
+        ser = UserInfoSerializer(instance=userObj, many=True, context={'request': request})
+        对象：Serializer类处理
+        QuerySet：ListSerializer类处理
+        -->一个类实例化的时候会执行他的初始化方法，在这之前会先执行 __new__ 方法
+            查看serializers.ModelSerializer的源码，一直往上深度3次可以查找到基类BaseSerializer的 __init__ 方法和 __new__ 方法
+                def __new__(cls, *args, **kwargs):
+                    if kwargs.pop('many', False):  # 先去获取到了many参数，如果没有默认就是False
+                        # many=True时返回QuerySet的处理
+                        return cls.many_init(*args, **kwargs)
+                            --->@classmethod
+                                def many_init(cls, *args, **kwargs):
+                                    list_serializer_class = getattr(meta, 'list_serializer_class', ListSerializer)
+                                    --->这就是内部区分处理的核心，当many=True的时候，其实是使用了ListSerializer来对QuerySet进行的处理
+                                    return list_serializer_class(*args, **list_kwargs)
+                    # many=False时返回对象的处理 ---># 这里会返回一个对象，这个对象就是实例化的那个对象，然后去执行对象的__init__方法
+                                                      也就是当前类BaseSerializer的__init__方法
+                    return super().__new__(cls, *args, **kwargs)
+
+    二、实例化对象的ser.data
+        ret = json.dumps(ser.data, ensure_ascii=False)
+        --->ret = super().data
+            --->if not hasattr(self, '_data'):
+                    if self.instance is not None and not getattr(self, '_errors', None):
+                        self._data = self.to_representation(self.instance)
+                        --->to_representation方法不在当前类中，此处是调用的Serializer类的to_representation方法
+                                def to_representation(self, instance):
+                                    ret = OrderedDict()
+                                    fields = self._readable_fields
+                                        ---->自定义的所有的字段
+                                    for field in fields:  # 循环每一个字段
+                                        try:
+                                            attribute = field.get_attribute(instance)
+                                            ---># 调用字段的get_attribute，本质上是调用CharField方法的get_attribute方法
+                                                接下来去CharField类中继承的父类中查看该方法，即可查询到源码关键流程原理
+                                        except SkipField:
+                                            continue
+                    elif hasattr(self, '_validated_data') and not getattr(self, '_errors', None):
+                        self._data = self.to_representation(self.validated_data)
+                    else:
+                        self._data = self.get_initial()
+                return self._data
+    三、实例化对象Queryset的ser.data
+        直接去BaseSerializer中查找ListSerializer方法即可，源码不多。

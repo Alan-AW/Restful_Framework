@@ -1,4 +1,4 @@
-序列化
+序列化基本用法总结
     1.外部文件写类（两种方式）
         class RolesSerializer(serializers.Serializer):
             # 以下字段必须要跟数据库中的字段对应，或者取什么字段，就要对应什么字段
@@ -53,3 +53,35 @@
                     ser = UserInfoSerializer(instance=userObj, many=True)
                     ret = json.dumps(ser.data, ensure_ascii=False)
                     return HttpResponse(ret)
+
+    3.自动化链表（深度操作）
+        class UserInfoSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = UserInfo
+                fields = '__all__'
+
+                depth = 1
+        注意：深度控制depth的值即为自动深度搜索，官方建议不超过10，一般不超过3-4最好，因为这个参数表示在内部自动进行深度级联操作，
+        一层一层的往下去获取关联的表的数据，深度越深，响应越慢，不能无节制的一直深入进去，对系统造成的损耗非常大，
+        同时也不利于用户的交互体验
+
+    4.生成链接
+        -序列化
+        class XXXXSerializer(serializers.ModelSerializer):
+            field_name = serializers.HyperlinkedIdentityField(
+                                                        view_name='api:gp',
+                                                        lookup_field='group_id',
+                                                        lookup_url_kwarg='pk'
+                                                    )  # 默认生成url
+
+            class Meta:
+                model = ModelClassName
+                fields = ['field_name']
+        注意：
+            1.生成的链接要有视图函数返回数据，就是要能访问
+            2.使用了HyperlinkedIdentityField类，参数配置不能少
+                view_name='api:gp',              反向生成路由别名，如果进行了分发，需要命名空间配合
+                lookup_field='field_name_id',    获取数据的条件(这里是根据字段的id进行获取)
+                lookup_url_kwarg='pk'            路由中 传递\接收 参数的名称 (?P<pk>\d+)
+            3.视图中使用的时候需要再加上一个参数配置：context={'request': request}
+                ser = XXXXSerializer(instance=ModelObj, many=True\False, context={'request': request})

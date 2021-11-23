@@ -1,3 +1,5 @@
+import hashlib
+import time, json
 from django.shortcuts import render, redirect, reverse, HttpResponse
 from django.http import JsonResponse
 from django.views import View
@@ -7,11 +9,10 @@ from rest_framework import exceptions
 from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.versioning import BaseVersioning, QueryParameterVersioning
 from API.models import *
-import hashlib
-import time, json
 from API.utils.permission import SVIPPermission
 from API.utils.throttle import VisitThrottle
 from API.utils.version import GetParamVersion
+from API.utils.serializer import RolesSerializer, UserInfoSerializer1, UserInfoSerializer, GroupSerializer
 
 
 def md5(user):
@@ -124,54 +125,6 @@ class ParserView(APIView):
         return JsonResponse('parser', safe=False)
 
 
-# 自动系列化处理简单字段数据获取
-class RolesSerializer(serializers.Serializer):
-    # 以下字段必须要跟数据库中的字段对应，或者取什么字段，就要对应什么字段
-    id = serializers.IntegerField()
-    title = serializers.CharField()
-
-
-# 自动序列化处理复杂关系的数据获取一（手动操作粒度控制）
-class UserInfoSerializer(serializers.Serializer):
-    # 普通字段获取详细数据
-    username = serializers.CharField()
-    password = serializers.CharField()
-
-    # choices字段获取详细数据
-    user_type = serializers.CharField(source='get_user_type_display')
-    # 在内部会对每一行的数据执行一下row.source的值，然后自动判断这个值是否可被调用，
-    #     如果可以被调用就会自动加括号进行调用，如果source的值是一个字符串，那么直接返回了这个字符串所对应的字段内容
-    #     如果写成了get_user_type_display,那么这个方法就会被自动执行，获取到文本信息
-
-    # 外键关联获取详细数据
-    group = serializers.CharField(source='group.title')
-
-    # ManyToMany字段获取详细数据
-    roles = serializers.SerializerMethodField()  # 自定义显示（外键或者choices字段都可以进行自定义的获取）
-    def get_roles(self, row):  # row表示当前处理表的类对象
-        roleObj = row.roles.all()
-        ret = []
-        for item in roleObj:
-            ret.append({'id': item.id, 'title': item.title},)
-        return ret
-
-
-# 自动序列化处理复杂关系的数据获取二(内置基本的操作,也可以混合使用：)
-class UserInfoSerializer(serializers.ModelSerializer):
-    user_type = serializers.CharField(source='get_user_type_display')
-    roles = serializers.SerializerMethodField()
-    class Meta:
-        model = UserInfo
-        fields = ['username', 'password', 'user_type', 'roles', 'group']
-
-    def get_roles(self, row):  # row表示当前处理表的类对象
-        roleObj = row.roles.all()
-        ret = []
-        for item in roleObj:
-            ret.append({'id': item.id, 'title': item.title},)
-        return ret
-
-
 # 序列化
 class RolesView(APIView):
     authentication_classes = []  # 不需要进行认证
@@ -183,9 +136,9 @@ class RolesView(APIView):
         # ret = json.dumps(roles, ensure_ascii=False)
 
         # 序列化方式二 -- ser.data 已经是转换完成的结果了
-        roles = Role.objects.all()
-        ser = RolesSerializer(instance=roes, many=True)  # many=True表示有多条数据
-        ret = json.dumps(ser.data, ensure_ascii=False)
+        # roles = Role.objects.all()
+        # ser = RolesSerializer(instance=roes, many=True)  # many=True表示有多条数据
+        # ret = json.dumps(ser.data, ensure_ascii=False)
 
         # 序列化方式三  -- ser.data 已经是转换完成的结果了
         roles = Role.objects.all().first()
@@ -202,7 +155,19 @@ class UserInfoView(APIView):
 
     def get(self, request, *args, **kwargs):
         userObj = UserInfo.objects.all()
-        ser = UserInfoSerializer(instance=userObj, many=True)
+        ser = UserInfoSerializer(instance=userObj, many=True, context={'request': request})
         ret = json.dumps(ser.data, ensure_ascii=False)
 
+        return HttpResponse(ret)
+
+
+# 序列化生成hypermedialink
+class GroupView(APIView):
+    authentication_classes = []  # 不需要进行认证
+    permission_classes = []  # 不需要权限就能访问
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        groupObj = UserGroup.objects.filter(id=pk).first()
+        ser = GroupSerializer(instance=groupObj, many=False)
+        ret = json.dumps(ser.data, ensure_ascii=False)
         return HttpResponse(ret)
