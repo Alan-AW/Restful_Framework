@@ -1,0 +1,55 @@
+序列化
+    1.外部文件写类（两种方式）
+        class RolesSerializer(serializers.Serializer):
+            # 以下字段必须要跟数据库中的字段对应，或者取什么字段，就要对应什么字段
+            id = serializers.IntegerField()
+            title = serializers.CharField()
+
+        class UserInfoSerializer(serializers.ModelSerializer):
+            user_type = serializers.CharField(source='get_user_type_display')
+            roles = serializers.SerializerMethodField()
+            class Meta:
+                model = ModelClassName
+                fields = '__all__'
+                fields = ['id', 'xxx', 'xxx']
+
+    2.字段
+        a. id = serializers.IntegerField()
+
+        b. title = serializers.CharField()
+
+        c. choices字段
+            字段名 = serializers.CharField(source='get_字段名_display')
+
+        d. Fk字段
+            字段名 = serializers.CharField(source='字段名.title')
+
+        e. MTM字段
+            class UserInfoSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = ModelClassName
+                    fields = ['id', 'aaa']
+                # 对MTM字段 aaa 自定义显示内容的方法
+                def get_aaa(self, row):  # row表示当前处理表的类对象
+                    roleObj = row.roles.all()
+                    ret = []
+                    for item in roleObj:
+                        ret.append({'id': item.id, 'title': item.title},)
+                    return ret
+
+        f. _自定义类
+            自定义一个类来处理一个字段：
+            class NameSer(serializers.CharField):
+                # 定义了该方法，那么返回值即是调用当前类的字段的值，一般不定义，也不会使用这种方式
+                def to_representation(self, value):
+                    return 'xxx'
+
+            class UserInfoSerializer(serializers.ModelSerializer):
+                name = NameSer(instance='username')
+
+            class UserView(APIView):
+                def get(self, request, *args, **kwargs):
+                    userObj = UserInfo.objects.all()
+                    ser = UserInfoSerializer(instance=userObj, many=True)
+                    ret = json.dumps(ser.data, ensure_ascii=False)
+                    return HttpResponse(ret)

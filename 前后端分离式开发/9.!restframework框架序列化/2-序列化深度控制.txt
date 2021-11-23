@@ -1,0 +1,10 @@
+深度控制：自动序列化联表的操作
+
+class UserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserInfo
+        fields = '__all__'
+
+        depth = 1
+        # 深度控制，官方建议不超过10，一般不超过3-4最好，因为这个参数表示在内部自动进行深度级联操作，一层一层的往下去获取关联的表的数据
+        深度越深，响应越慢，不能无节制的一直深入进去，对系统造成的损耗非常大，同时也不利于用户的交互体验

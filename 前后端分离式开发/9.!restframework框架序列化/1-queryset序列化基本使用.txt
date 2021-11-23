@@ -1,0 +1,75 @@
+序列化
+    序列化分两种情况
+    一、普通数据的序列化
+        return json.dumps(data)
+        return Jsonresponse(data)
+
+    二、Queryset对象序列化
+        -外部文件自定义一个类，继承serializers.Serializer
+            方式一
+            from rest_framework import serializers
+            class RolesSerializer(serializers.Serializer):
+                id = serializers.IntegerField()
+                title = serializers.CharField()
+            注意：
+                字段必须要跟数据库中的字段对应，或者取什么字段，就要对应数据表类中的相同的类型
+
+            方式二
+            class UserInfoSerializer(serializers.Serializer):
+                # 普通字段获取详细数据
+                username = serializers.CharField()
+                password = serializers.CharField()
+
+                # choices字段获取详细数据
+                user_type = serializers.CharField(source='get_user_type_display')
+
+
+                # 外键关联获取详细数据
+                group = serializers.CharField(source='group.title')
+
+                # ManyToMany字段获取详细数据
+                roles = serializers.SerializerMethodField()  # 自定义显示（外键或者choices字段都可以进行自定义的获取）
+                def get_roles(self, row):  # row表示当前处理表的类对象
+                    roleObj = row.roles.all()
+                    ret = []
+                    for item in roleObj:
+                        ret.append({'id': item.id, 'title': item.title},)
+                    return ret
+            注意: 1.普通字段与方式一一样
+                  2.choices字段获取详细数据需要加上关键字参数source='get_字段名_display'
+                        # 在内部会对每一行的数据执行一下row.source的值，然后自动判断这个值是否可被调用，
+                        # 如果可以被调用就会自动加括号进行调用，如果source的值是一个字符串，那么直接返回了这个字符串所对应的字段内容
+                        # 如果写成了get_字段名_display,那么这个方法就会被自动执行，获取到文本信息
+                  3.外键关联Fk获取详细数据需要加上关键字参数source='group.title'
+                        这里可以一直点到天荒地老
+                  4.多对多MTM关系需要进行自定义获取的文本内容
+                        xxx = serializers.SerializerMethodField()  - 表示自定义
+                        然后定义一个函数，函数名格式为 get_xxx 要一一对应
+
+            方式三
+            通过继承serializers.ModelSerializer自动完成一些简单的数据的序列化（也可以跟上面两种方式混合使用）
+            class UserInfoSerializer(serializers.ModelSerializer):
+                user_type = serializers.CharField(source='get_user_type_display')
+                roles = serializers.SerializerMethodField()
+                class Meta:
+                    model = UserInfo
+                    fields = ['username', 'password', 'user_type', 'roles', 'group']
+
+                def get_roles(self, row):  # row表示当前处理表的类对象
+                    roleObj = row.roles.all()
+                    ret = []
+                    for item in roleObj:
+                        ret.append({'id': item.id, 'title': item.title},)
+                    return ret
+
+        -视图中的使用
+            1.引入自定义的当前类的序列化对象
+            from xxx import SerializerClass
+            2.将关键字instance\many设置上即可、单条数据many=False，多条为True
+            def get(self, request, *args, **kwargs):
+                roles = Role.objects.all()
+                ser = RolesSerializer(instance=roes, many=True)  # many=True表示有多条数据,单条数据设置为False
+                ret = json.dumps(ser.data, ensure_ascii=False)   # 固定写法（ser.data就是表对象的转换结果）
+                return Httpresponse(ret)
+
+
