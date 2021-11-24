@@ -1,5 +1,5 @@
 from django.urls import path, re_path, include
-from API.views import AuthView, OrderView, UserView, ParserView, RolesView, UserInfoView, GroupView
+from API.views import AuthView, OrderView, UserView, ParserView, RolesView, UserInfoView, GroupView, UserGroupView
 
 urlpatterns = [
     re_path('auth/$', AuthView.as_view(), name='auth'),
@@ -9,4 +9,5 @@ urlpatterns = [
     re_path('ser/roles/$', RolesView.as_view(), name='roles'),
     re_path('ser/userinfo/$', UserInfoView.as_view(), name='userinfo'),
     re_path('ser/group/(?P<pk>\d+)/$', GroupView.as_view(), name='gp'),
+    re_path('ser/user_gp/$', UserGroupView.as_view(), name='user_gp'),
 ]

@@ -157,11 +157,10 @@ class UserInfoView(APIView):
         userObj = UserInfo.objects.all()
         ser = UserInfoSerializer(instance=userObj, many=True, context={'request': request})
         ret = json.dumps(ser.data, ensure_ascii=False)
-
         return HttpResponse(ret)
 
 
-# 序列化生成hypermedialink
+# 序列化生成hypermedialink对应的视图
 class GroupView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
@@ -171,3 +170,26 @@ class GroupView(APIView):
         ser = GroupSerializer(instance=groupObj, many=False)
         ret = json.dumps(ser.data, ensure_ascii=False)
         return HttpResponse(ret)
+
+
+# 序列化验证用户提交的数据
+class UserGroupSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=10, error_messages={'required': '标题不能为空'}, validators=[])
+
+    def validate_title(self, value):
+        # 自定义验证规则
+        raise exceptions.ValidationError('就不给你通过')
+        # return value
+
+
+class UserGroupView(APIView):
+    authentication_classes = []  # 不需要进行认证
+    permission_classes = []  # 不需要权限就能访问
+    def post(self, request, *args, **kwargs):
+        ser = UserGroupSerializer(data=request.data)
+        response = {}
+        if ser.is_valid():
+            response['status'] = ser.validated_data
+        else:
+            response['status'] = ser.errors
+        return JsonResponse(response)

@@ -1,0 +1,32 @@
+序列化请求数据校验,与Form表单验证差不多的方法
+    1.自定义序列化的类中
+        class UserGroupSerializer(serializers.Serializer):
+            title = serializers.CharField(max_length=10, error_messages={'required': '标题不能为空'}, validators=[])
+            password = serializers.CharField(max_length=10, error_messages={'required': '密码不能为空'}, validators=[])
+            re_pwd = serializers.CharField(max_length=10)
+
+            def validate_title(self, value):
+                # 自定义验证规则
+                raise exceptions.ValidationError('就不给你通过')
+                # return value
+
+            def validate_password(self, value):
+                # 自定义验证规则
+                re_password = re_pwd.value
+                if re_password != value:
+                    raise exceptions.ValidationError('两次输入的密码不一致')
+                else:
+                    return value
+    2.视图类中
+        class UserGroupView(APIView):
+            authentication_classes = []  # 不需要进行认证
+            permission_classes = []  # 不需要权限就能访问
+            def post(self, request, *args, **kwargs):
+                ser = UserGroupSerializer(data=request.data)
+                response = {}
+                # 触发验证机制
+                if ser.is_valid():
+                    response['status'] = ser.validated_data
+                else:
+                    response['status'] = ser.errors
+                return JsonResponse(response)
