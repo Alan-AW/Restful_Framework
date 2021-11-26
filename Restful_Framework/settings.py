@@ -142,7 +142,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
-    ]
+    ],
+
+    # 分页配置
+    'PAGE_SIZE': 3
 }
 
 # 自定义节流配置

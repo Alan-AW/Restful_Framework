@@ -4,15 +4,17 @@ from django.shortcuts import render, redirect, reverse, HttpResponse
 from django.http import JsonResponse
 from django.views import View
 from rest_framework.views import APIView
-from rest_framework import serializers
-from rest_framework import exceptions
-from rest_framework.parsers import JSONParser, FormParser
-from rest_framework.versioning import BaseVersioning, QueryParameterVersioning
+from rest_framework import serializers  # 序列化
+from rest_framework import exceptions  # 抛异常
+from rest_framework.parsers import JSONParser, FormParser  # 解析器
+from rest_framework.response import Response  # 渲染器
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination  # 分页
+from rest_framework.versioning import BaseVersioning, QueryParameterVersioning  # 版本控制
 from API.models import *
-from API.utils.permission import SVIPPermission
-from API.utils.throttle import VisitThrottle
-from API.utils.version import GetParamVersion
-from API.utils.serializer import RolesSerializer, UserInfoSerializer1, UserInfoSerializer, GroupSerializer
+from API.utils.permission import SVIPPermission  # 自定义权限
+from API.utils.throttle import VisitThrottle  # 自定义节流
+from API.utils.version import GetParamVersion  # 自定义get传参获取版本
+from API.utils.serializer import RolesSerializer, UserInfoSerializer1, UserInfoSerializer, GroupSerializer  # 自定义序列化
 
 
 def md5(user):
@@ -181,7 +183,7 @@ class UserGroupSerializer(serializers.Serializer):
         raise exceptions.ValidationError('就不给你通过')
         # return value
 
-
+# 序列化验证用户提交的数据
 class UserGroupView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
@@ -193,3 +195,70 @@ class UserGroupView(APIView):
         else:
             response['status'] = ser.errors
         return JsonResponse(response)
+
+
+# 分页序列化
+class PagerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
+
+
+# 分页
+class PagerView(APIView):
+    authentication_classes = []  # 不需要进行认证
+    permission_classes = []  # 不需要权限就能访问
+
+    def get(self, request, *args, **kwargs):
+        allObj = Role.objects.all()  # 获取数据
+        pg = MyCursorPagination()  #  创建分页对象
+        # 获取分页之后的结果
+        page_roles = pg.paginate_queryset(queryset=allObj, request=request, view=self)
+        ser = PagerSerializer(instance=page_roles, many=True)  # 对分页结果进行序列化处理返回
+
+        return pg.get_paginated_response(ser.data)  # 自动生成上一页和下一页的链接以及总数据量
+        # return Response(ser.data)
+
+
+# 自定义分页
+class MyPageNumberFunc(PageNumberPagination):
+    """
+        127.0.0.1:8000/api/v1/page/?page=1&size=5
+        表示当前请求为查看第一页，显示5条数据
+        page 和 size 可以单独使用
+    """
+    page_size = 2  # 分页默认显示数据条数
+    max_page_size = 10  # 分页最大数据显示条数
+    page_query_param = 'page'  # get传参获取页码
+    page_size_query_param = 'size'  # get传参获取到显示条数
+
+
+class MyPagenumberFuncTo(LimitOffsetPagination):
+    """
+    这种分页方式表示直接从数据库的某一个位置往后取出多少条数据
+    127.0.0.1:8000/api/v1/page/?offset=2&limt=5
+    表示当前需要从数据库中取出第2到第5条数据
+    """
+    default_limit = 2  # 分页默认显示数据条数
+    max_limit = None  # 当前页显示数据的最大条数
+    limit_query_param = 'limit'  # get传参指定终止位置
+    offset_query_param = 'offset'  # get传参指定起始位置
+
+
+class MyCursorPagination(CursorPagination):
+    """
+    加密页码
+    视图中返回应使用以下方式
+        pg = MyCursorPagination()  #  创建分页对象
+        page_roles = pg.paginate_queryset(queryset=allObj, request=request, view=self)
+        ser = PagerSerializer(instance=page_roles, many=True)  # 对分页结果进行序列化处理返回
+        return pg.get_paginated_response(ser.data)  # 自动生成上一页和下一页的链接以及总数据量
+    返回结果中的翻页链接
+    "next": "http://127.0.0.1:8000/api/v1/ser/pager1/?cursor=cD04",
+    "previous": "http://127.0.0.1:8000/api/v1/ser/pager1/?cursor=cj0xJnA9Nw%3D%3D",
+    """
+    cursor_query_param = 'cursor'  # get传参指定页码
+    page_size = 2  # 每页显示数量
+    ordering = 'id'  # 排序规则
+    page_size_query_param = 'size'  # get传参指定显示条数
+    max_page_size = 10  # 分页最大数据显示条数

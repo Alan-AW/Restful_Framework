@@ -1,0 +1,78 @@
+分页
+    -分页：
+        一般的分页通常是扫描所有的数据，然后切割取出数据，如果数据量超大，那么越往后
+        需要扫描的数据就越多，导致响应缓慢；
+    -解决办法(加密分页)：
+        加密分页的本质是记住当前页面的数据最大ID和最小ID，翻页的时候就取出ID大于上一页的最大ID小于分页显示最大条数的ID
+        这样就可以直接跳过对前面数据的扫描。
+
+1.分页的基本使用：
+    库支持
+        from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
+    分页序列化
+    class PagerSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Role
+            fields = '__all__'
+    视图使用
+        class PagerView(APIView):
+            authentication_classes = []  # 不需要进行认证
+            permission_classes = []  # 不需要权限就能访问
+
+            def get(self, request, *args, **kwargs):
+                allObj = Role.objects.all()  # 获取数据
+                pg = MyPageNumberFunc()  #  创建分页对象（如果有自定义的分页类，那么替换掉即可）
+                # 获取分页之后的结果
+                page_roles = pg.paginate_queryset(queryset=allObj, request=request, view=self)
+                ser = PagerSerializer(instance=page_roles, many=True)  # 对分页结果进行序列化处理返回
+
+                return pg.get_paginated_response(ser.data)  # 自动生成上一页和下一页的链接以及总数据量
+                # return Response(ser.data)
+
+    a.看第n页，每页显示n条数据；
+        class MyPageNumberFunc(PageNumberPagination):
+            """
+                127.0.0.1:8000/api/v1/page/?page=1&size=5
+                表示当前请求为查看第一页，显示5条数据
+                page 和 size 可以单独使用
+            """
+            page_size = 2  # 分页显示数据条数
+            max_page_size = 10  # 分页最大数据显示条数
+            page_query_param = 'page'  # get传参指定页码
+            page_size_query_param = 'size'  # get传参指定显示条数
+
+    b.在第n个位置，向后查看n条数据；(类似光标的位置)
+        from rest_framework.pagination import LimitOffsetPagination
+
+        class MyPagenumberFuncTo(LimitOffsetPagination):
+            """
+            这种分页方式表示直接从数据库的某一个位置往后取出多少条数据
+            127.0.0.1:8000/api/v1/page/?offset=2&limt=5
+            表示当前需要从数据库中取出第2到第5条数据
+            """
+            default_limit = 2  # 分页默认显示数据条数
+            max_limit = None  # 当前页显示数据的最大条数
+            limit_query_param = 'limit'  # get传参指定终止位置
+            offset_query_param = 'offset'  # get传参指定起始位置
+
+    c.加密分页，只能允许查看上一页和下一页。(响应超快,官方称为游标)
+        from rest_framework.pagination import CursorPagination
+        注意：
+            使用游标分页之后，页面上无法读取出当前页码，也无法读取到页码规则，页码全部被内部加密了
+            在“视图”中使用的时候要返回他自动生成的上一页和下一页的链接即，使用该返回值：
+                return pg.get_paginated_response(ser.data)  # 自动生成上一页和下一页的链接以及总数据量
+
+        class MyCursorPagination(BasePagination):
+            cursor_query_param = 'cursor'  # get传参指定页码
+            page_size = 2  # 每页显示数量
+            ordering = '-created'  # 排序规则
+            page_size_query_param = 'size'  # get传参指定显示条数
+            max_page_size = 10  # 分页最大数据显示条数
+
+2.总结
+    面试题：
+        1.关于MySQL的表结构设计
+        2.录入数据
+        3.联表查询+group_by
+       *4.如果数据量大，分页如何做?
+        5.数据库性能相关?
