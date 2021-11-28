@@ -1,0 +1,51 @@
+路由系统
+    1.手动
+        -系统根路由
+            re_path(r'^api/(?P<version>[v1|v2]+)', include(('APPName.urls', 'APPName'), namespace='namespace')),
+
+        -app内分发
+            urlpatterns = [
+                # 普通路由
+                re_path('auth/$', AuthView.as_view(), name='auth'),
+
+                # 继承了GenericViewSet的时候其基类ViewSetMixin重写了as_view方法
+                re_path('ser/new_view2/$', NewView2.as_view({'get': 'list'}), name='new_view2'),
+
+                # 联合渲染器查看不同的页面显示效果 -- 地址中插入?formet=json效果一样
+                re_path('ser/new_view2\.(?P<formet>\w+)$', NewView2.as_view({'get': 'list'}), name='new_view2'),
+
+                re_path('ser/model_view/(?P<pk>\d+)\.(?P<formet>\w+)$',MyModelView.as_view({
+                                                                            'get': 'retrieve',  # 查
+                                                                            'delete': 'destroy',  # 删
+                                                                            'put': 'update',      # （增）更新
+                                                                            'patch': 'partial_update'   # （改）局部更新
+                                                                            }),name='model_view')
+
+            ]
+
+    2.自动生成路由(增删改查全部生成)
+        from rest_framework import routers
+
+        router = routers.DefaultRouter()  # 实例化
+        router.register(r'url前缀', APPName.views.XXXView)  # 注册视图
+
+        urlpatterns = [
+            # 自动生成所有已注册的视图的增删改查路由
+            re_path(r'^api/(?P<version>[v1|v2]+)', include(router.urls)),
+        ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

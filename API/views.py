@@ -10,6 +10,10 @@ from rest_framework.parsers import JSONParser, FormParser  # 解析器
 from rest_framework.response import Response  # 渲染器
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination  # 分页
 from rest_framework.versioning import BaseVersioning, QueryParameterVersioning  # 版本控制
+from rest_framework.generics import GenericAPIView  # 视图1
+from rest_framework.viewsets import GenericViewSet  # 视图2
+from rest_framework.viewsets import ModelViewSet    # 视图3
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, AdminRenderer, HTMLFormRenderer
 from API.models import *
 from API.utils.permission import SVIPPermission  # 自定义权限
 from API.utils.throttle import VisitThrottle  # 自定义节流
@@ -262,3 +266,55 @@ class MyCursorPagination(CursorPagination):
     ordering = 'id'  # 排序规则
     page_size_query_param = 'size'  # get传参指定显示条数
     max_page_size = 10  # 分页最大数据显示条数
+
+
+# 视图（无用）
+class NewView(GenericAPIView):  # APIView
+    queryset = Role.objects.all()
+    serializer_class = PagerSerializer
+    pagination_class = PageNumberPagination
+    def get(self, request, *args, **kwargs):
+        # 获取数据
+        roles = self.get_queryset()
+        # 分页
+        pager_roles = self.paginate_queryset(roles)
+        # 序列化
+        ser = self.get_serializer(instance=pager_roles, many=True)
+        return Response(ser.data)
+
+
+# 视图
+class NewView2(GenericViewSet):
+    queryset = Role.objects.all()
+    serializer_class = PagerSerializer
+    pagination_class = PageNumberPagination
+    def list(self, request, *args, **kwargs):
+        # 获取数据
+        roles = self.get_queryset()
+        # 分页
+        pager_roles = self.paginate_queryset(roles)
+        # 序列化
+        ser = self.get_serializer(instance=pager_roles, many=True)
+        return Response(ser.data)
+
+
+# 视图
+class MyModelView(ModelViewSet):
+    queryset = Role.objects.all()
+    serializer_class = PagerSerializer
+    pagination_class = PageNumberPagination
+
+
+class TestView(APIView):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer, AdminRenderer, HTMLFormRenderer]
+    def get(self, request, *args, **kwargs):
+        return Response('hh')
+
+
+
+
+
+
+
+
+

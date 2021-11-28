@@ -1,0 +1,39 @@
+视图
+    1.from django.views import View
+        class XXXVie(View):
+        pass
+
+    2.from rest_framework.views import APIView  # View
+        class XXXView(APIView):
+        pass
+
+    3.from rest_framework.generics import GenericAPIView  # APIView
+        class XXXView(GenericAPIView):
+            # 用法见 API.views.NewView
+            pass
+
+    4.from rest_framework.viewsets import GenericViewSet  # GenericAPIView
+        class XXXView(GenericViewSet):
+            pass
+
+    5.自动化增删改查操作
+        路由系统：
+            re_path('model_view/(?P<pk>\d+)/$',MyModelView.as_view({
+                                                'get': 'retrieve',          # 查（url存在PK，那么就会查询单条数据）
+                                                'delete': 'destroy',        # 删（url中需要传入pk）
+                                                'put': 'update',            # 增（全部更新）
+                                                'patch': 'partial_update'   # 改（局部更新）
+                                                }),name='model_view')
+        视图：
+            from rest_framework.viewsets import ModelViewSet
+            class MyModelView(ModelViewSet):
+                queryset = Role.objects.all()
+                serializer_class = PagerSerializer
+                pagination_class = PageNumberPagination
+
+总结：
+    基本的增删改查: ModelViewSet
+    增删         : CreateModelMixin, DestroyModelMixin, GenericViewSet
+    复杂的操作    :ApIView, GenericViewSet
+
+*类的继承关系和每个类实现的大致的方法

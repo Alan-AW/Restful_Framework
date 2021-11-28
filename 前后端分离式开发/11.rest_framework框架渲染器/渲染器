@@ -1,0 +1,18 @@
+渲染器
+    视图自定义
+        from rest_framework.renderers import JSONRenderer,BrowsableAPIRenderer
+        class TestView(APIView):
+            renderer_classes = [JSONRenderer, BrowsableAPIRenderer, AdminRenderer, HTMLFormRenderer]
+            def get(self, request, *args, **kwargs):
+                return Response('hh')
+
+
+    settings配置文件全局
+        REST_FRAMEWORK = {
+            ......
+            # 渲染器
+            'DEFAULT_RENDERER_CLASSES': [
+                'rest_framework.renderers.JSONRenderer',
+                'rest_framework.renderers.BrowsableAPIRenderer',
+            ]
+        }

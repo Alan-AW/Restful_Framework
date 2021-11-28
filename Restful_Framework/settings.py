@@ -145,7 +145,13 @@ REST_FRAMEWORK = {
     ],
 
     # 分页配置
-    'PAGE_SIZE': 3
+    'PAGE_SIZE': 3,
+
+    # 渲染器
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ]
 }
 
 # 自定义节流配置
