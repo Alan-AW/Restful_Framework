@@ -12,7 +12,7 @@ from rest_framework.pagination import PageNumberPagination, LimitOffsetPaginatio
 from rest_framework.versioning import BaseVersioning, QueryParameterVersioning  # 版本控制
 from rest_framework.generics import GenericAPIView  # 视图1
 from rest_framework.viewsets import GenericViewSet  # 视图2
-from rest_framework.viewsets import ModelViewSet    # 视图3
+from rest_framework.viewsets import ModelViewSet  # 视图3
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, AdminRenderer, HTMLFormRenderer
 from API.models import *
 from API.utils.permission import SVIPPermission  # 自定义权限
@@ -161,8 +161,11 @@ class UserInfoView(APIView):
 
     def get(self, request, *args, **kwargs):
         userObj = UserInfo.objects.all()
+        # 一定要加上context={'request': request}才可以生成链接
         ser = UserInfoSerializer(instance=userObj, many=True, context={'request': request})
+        # ser.data就是序列化之后返回的有序字典，已经将对象处理为数据库存储的数据了
         ret = json.dumps(ser.data, ensure_ascii=False)
+        # 如果直接返回JsonResponse就不需要调用json.dumps方法去手动序列化了
         return HttpResponse(ret)
 
 
@@ -170,6 +173,7 @@ class UserInfoView(APIView):
 class GroupView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
+
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         groupObj = UserGroup.objects.filter(id=pk).first()
@@ -187,10 +191,12 @@ class UserGroupSerializer(serializers.Serializer):
         raise exceptions.ValidationError('就不给你通过')
         # return value
 
+
 # 序列化验证用户提交的数据
 class UserGroupView(APIView):
     authentication_classes = []  # 不需要进行认证
     permission_classes = []  # 不需要权限就能访问
+
     def post(self, request, *args, **kwargs):
         ser = UserGroupSerializer(data=request.data)
         response = {}
@@ -215,7 +221,7 @@ class PagerView(APIView):
 
     def get(self, request, *args, **kwargs):
         allObj = Role.objects.all()  # 获取数据
-        pg = MyCursorPagination()  #  创建分页对象
+        pg = MyCursorPagination()  # 创建分页对象
         # 获取分页之后的结果
         page_roles = pg.paginate_queryset(queryset=allObj, request=request, view=self)
         ser = PagerSerializer(instance=page_roles, many=True)  # 对分页结果进行序列化处理返回
@@ -273,6 +279,7 @@ class NewView(GenericAPIView):  # APIView
     queryset = Role.objects.all()
     serializer_class = PagerSerializer
     pagination_class = PageNumberPagination
+
     def get(self, request, *args, **kwargs):
         # 获取数据
         roles = self.get_queryset()
@@ -288,6 +295,7 @@ class NewView2(GenericViewSet):
     queryset = Role.objects.all()
     serializer_class = PagerSerializer
     pagination_class = PageNumberPagination
+
     def list(self, request, *args, **kwargs):
         # 获取数据
         roles = self.get_queryset()
@@ -305,16 +313,9 @@ class MyModelView(ModelViewSet):
     pagination_class = PageNumberPagination
 
 
+# 视图
 class TestView(APIView):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, AdminRenderer, HTMLFormRenderer]
+
     def get(self, request, *args, **kwargs):
         return Response('hh')
-
-
-
-
-
-
-
-
-

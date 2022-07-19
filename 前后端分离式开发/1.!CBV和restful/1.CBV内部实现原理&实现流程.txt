@@ -57,7 +57,8 @@ django FBV、CBV内部原理：
 
     **csrf_token
         1. django中间件
-            最多能写5个方法
+            不是所有中间件都必须写5个方法，但是最多只能写5个方法；
+            请求穿过中间件的时候，有什么方法就执行什么方法，没有就通过
             process_request             # 原生request
             process_view                # 视图函数
             process_response            # 视图返回调用
@@ -65,17 +66,19 @@ django FBV、CBV内部原理：
             process_render_template     # render方法返回时调用
 
         2. 中间件执行流程
-            -执行所有的process_request
-            -路由匹配
-            -重头执行process_view
-            -执行视图函数
-                未报错 -->
+            -0.请求到来
+            -1.顺序执行每一个中间件的process_request
+            -2.路由匹配
+            -3.重头执行所有中间件的process_view
+            -4.执行视图
+            -5.视图返回（逆序执行，也就是settings中的中间件从下往上）
+                -6.未报错 -->
                     视图函数返回了render方法
-                        -执行process_render_template
+                        -6.1逆序执行所有中间件的process_render_template
                     视图函数其他返回值
-                        -视图函数返回之后执行process_response
-                有报错 -->
-                    -执行process_exception
+                        -6.2视图函数返回之后逆序执行所有中间件的process_response
+                -7.有报错 -->
+                    -逆序执行所有中间件的process_exception
 
         3. django的csrf_token的实现
             实现原理：
